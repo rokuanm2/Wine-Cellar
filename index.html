@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🍷 Wine Cellar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf8f5;
+    --warm-white: #f5f2ed;
+    --bg: #f8f6f2;
+    --card: #ffffff;
+    --border: #e8e0d5;
+    --border-light: #f0ebe4;
+    --text: #1a1410;
+    --text-mid: #5c4a3a;
+    --text-soft: #9b8575;
+    --accent: #8b1a1a;
+    --accent-light: #c4392b;
+    --gold: #b5864a;
+    --gold-light: #d4a96a;
+    --white-wine: #d4a96a;
+    --red-wine: #8b1a1a;
+    --tag-bg: #f2ece4;
+    --tag-text: #7a5c3a;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 20px rgba(26,20,16,0.08);
+    --shadow-card: 0 4px 24px rgba(26,20,16,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .logo span { font-style: italic; color: var(--gold); }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 38px; height: 38px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+    color: var(--text-mid);
+  }
+  .icon-btn:active { transform: scale(0.93); background: var(--warm-white); }
+  .icon-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+  }
+  .search-input {
+    width: 100%;
+    padding: 11px 16px 11px 40px;
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    background: var(--card);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--gold); }
+  .search-icon {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: var(--text-soft);
+    pointer-events: none;
+  }
+
+  /* ── Filter Tabs ── */
+  .filter-section {
+    background: var(--cream);
+    padding: 0 20px 14px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    flex-shrink: 0;
+    padding: 7px 16px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .filter-tab:active { transform: scale(0.95); }
+  .filter-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 500;
+  }
+  .filter-tab.gold.active {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    background: var(--card);
+    border-bottom: 1px solid var(--border-light);
+    padding: 12px 20px;
+    align-items: center;
+  }
+  .stat {
+    flex: 1;
+    text-align: center;
+  }
+  .stat + .stat { border-left: 1px solid var(--border-light); }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 3px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Wine List ── */
+  .wine-list {
+    padding: 16px 16px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .country-section { margin-top: 8px; }
+  .country-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    padding: 0 4px 8px;
+  }
+
+  /* Wine Card */
+  .wine-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .wine-card:active { transform: scale(0.985); box-shadow: none; }
+  .wine-card:hover { box-shadow: var(--shadow-card); border-color: var(--border); }
+
+  .wine-type-bar {
+    width: 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 60px;
+  }
+  .wine-type-bar.red { background: var(--red-wine); }
+  .wine-type-bar.white { background: var(--gold); }
+
+  .wine-info { flex: 1; min-width: 0; }
+  .wine-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .wine-name-kr {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+  }
+  .wine-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .tag {
+    padding: 3px 9px;
+    border-radius: 50px;
+    background: var(--tag-bg);
+    font-size: 11px;
+    color: var(--tag-text);
+    font-weight: 400;
+  }
+  .tag.type-red { background: #fdf0f0; color: var(--accent); }
+  .tag.type-white { background: #fdf8ed; color: #8a6520; }
+  .tag.vintage { background: var(--warm-white); color: var(--text-mid); }
+
+  .wine-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .wine-price {
+    font-size: 13px;
+    color: var(--text-mid);
+    font-weight: 500;
+    text-align: right;
+  }
+  .wine-store {
+    font-size: 11px;
+    color: var(--text-soft);
+    text-align: right;
+  }
+  .fav-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .fav-btn:active { transform: scale(1.3); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-soft);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 15px; }
+
+  /* ── Bottom Nav ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: var(--card);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    padding: 10px 0 18px;
+    z-index: 200;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: all 0.2s;
+    color: var(--text-soft);
+    font-size: 11px;
+  }
+  .nav-item:active { transform: scale(0.92); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-item.active { color: var(--accent); }
+
+  /* ── Modal / Sheet ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,20,16,0.5);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(2px);
+  }
+  .overlay.visible { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%; max-width: 430px;
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    z-index: 400;
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .sheet.visible { transform: translateX(-50%) translateY(0); }
+
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 14px auto 0;
+  }
+  .sheet-content { padding: 20px 20px 40px; }
+  .sheet-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .sheet-subtitle { font-size: 13px; color: var(--text-soft); margin-bottom: 20px; }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { font-size: 13px; color: var(--text-soft); }
+  .detail-val { font-size: 14px; font-weight: 500; color: var(--text); text-align: right; }
+
+  .tasting-note {
+    background: var(--warm-white);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-top: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-mid);
+    white-space: pre-wrap;
+  }
+  .tasting-note-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+  }
+
+  .sheet-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: var(--warm-white); color: var(--text-mid); border: 1.5px solid var(--border); }
+  .btn-danger { background: #fff0f0; color: #c0392b; border: 1.5px solid #f5c6c6; }
+
+  /* Add/Edit Form Sheet */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text-soft); margin-bottom: 6px; letter-spacing: 0.3px; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--warm-white);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--gold); background: #fff; }
+  .form-textarea { height: 100px; resize: none; line-height: 1.6; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row .form-group { flex: 1; }
+
+  .type-selector { display: flex; gap: 8px; }
+  .type-option {
+    flex: 1;
+    padding: 11px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-mid);
+  }
+  .type-option.selected-red { border-color: var(--red-wine); background: #fdf0f0; color: var(--red-wine); font-weight: 500; }
+  .type-option.selected-white { border-color: var(--gold); background: #fdf8ed; color: #8a6520; font-weight: 500; }
+
+  .fab {
+    position: fixed;
+    bottom: 90px;
+    right: calc(50% - 200px);
+    width: 54px; height: 54px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: white;
+    box-shadow: 0 4px 20px rgba(139,26,26,0.4);
+    cursor: pointer;
+    z-index: 150;
+    transition: all 0.2s;
+    border: none;
+  }
+  .fab:active { transform: scale(0.93); }
+
+  /* Tasting view */
+  .tasting-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .tasting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .tasting-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .tasting-date { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+  .tasting-num {
+    background: var(--warm-white);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--text-soft);
+  }
+  .tasting-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-mid);
+    white-space: pre-wrap;
+  }
+
+  /* Inventory view */
+  .inventory-header {
+    padding: 16px 16px 8px;
+    font-size: 13px;
+    color: var(--text-soft);
+  }
+  .inv-group { background: var(--card); border-radius: var(--radius); margin: 0 16px 10px; overflow: hidden; border: 1px solid var(--border-light); }
+  .inv-group-title {
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--warm-white);
+  }
+  .inv-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border-light);
+    gap: 12px;
+  }
+  .inv-row:last-child { border-bottom: none; }
+  .inv-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .inv-dot.red { background: var(--red-wine); }
+  .inv-dot.white { background: var(--gold); }
+  .inv-name { flex: 1; font-size: 14px; color: var(--text); }
+  .inv-vintage { font-size: 12px; color: var(--text-soft); }
+  .inv-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .inv-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--accent);
+    min-width: 24px;
+    text-align: center;
+  }
+  .inv-btn {
+    width: 28px; height: 28px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    background: var(--warm-white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--text-mid);
+    font-weight: 300;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+  .inv-btn:active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* Page views */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    padding: 20px 20px 16px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .page-sub { font-size: 13px; color: var(--text-soft); margin-top: 2px; }
+
+  .page-content { padding-bottom: 90px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: white;
+    padding: 11px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    z-index: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Scroll hint */
+  .scroll-content { overflow-y: auto; }
+
+  /* ── Tasting Year Bar ── */
+  .tasting-year-bar {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border-light);
+    padding: 10px 16px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .tasting-year-bar::-webkit-scrollbar { display: none; }
+
+  .year-pill {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    user-select: none;
+  }
+  .year-pill:active { transform: scale(0.93); }
+  .year-pill .y-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-mid);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .year-pill .y-count {
+    font-size: 11px;
+    color: var(--text-soft);
+    background: var(--tag-bg);
+    border-radius: 50px;
+    padding: 1px 7px;
+    transition: all 0.2s;
+  }
+  .year-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 3px 12px rgba(139,26,26,0.25);
+    transform: scale(1.04);
+  }
+  .year-pill.active .y-num { color: white; }
+  .year-pill.active .y-count { background: rgba(255,255,255,0.25); color: white; }
+
+  /* Year section anchor */
+  .tasting-year-section { scroll-margin-top: 8px; }
+  .tasting-year-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .tasting-year-heading .y-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .tasting-year-heading .y-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-light);
+  }
+  .tasting-year-heading .y-badge {
+    font-size: 12px;
+    color: var(--text-soft);
+    background: var(--warm-white);
+    border-radius: 50px;
+    padding: 3px 10px;
+    border: 1px solid var(--border-light);
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── PAGE: Wine List ── -->
+<div class="page active" id="page-list">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">Wine <span>Cellar</span></div>
+      <div class="header-actions">
+        <div class="icon-btn" onclick="toggleFavFilter()" id="fav-filter-btn" title="즐겨찾기">♡</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" placeholder="와인 이름으로 검색..." oninput="renderList()" />
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-tabs" id="filter-tabs">
+      <div class="filter-tab active" onclick="setFilter('all',this)">전체</div>
+      <div class="filter-tab" onclick="setFilter('red',this)">🍷 레드</div>
+      <div class="filter-tab gold" onclick="setFilter('white',this)">🥂 화이트</div>
+      <div class="filter-tab" onclick="setFilter('ITALY',this)">🇮🇹 이탈리아</div>
+      <div class="filter-tab" onclick="setFilter('FRANCE',this)">🇫🇷 프랑스</div>
+      <div class="filter-tab" onclick="setFilter('NEW ZEALAND',this)">🇳🇿 뉴질랜드</div>
+      <div class="filter-tab" onclick="setFilter('AUSTRALIA',this)">🇦🇺 호주</div>
+      <div class="filter-tab" onclick="setFilter('U.S.A',this)">🇺🇸 미국</div>
+      <div class="filter-tab" onclick="setFilter('SPAIN',this)">🇪🇸 스페인</div>
+      <div class="filter-tab" onclick="setFilter('ARGENTINA & CHILE',this)">🌎 남미</div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">41</div>
+      <div class="stat-label">전체</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-red" style="color:var(--red-wine)">0</div>
+      <div class="stat-label">레드</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-white" style="color:var(--gold)">0</div>
+      <div class="stat-label">화이트</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-fav" style="color:var(--text-soft)">0</div>
+      <div class="stat-label">즐겨찾기</div>
+    </div>
+  </div>
+
+  <div class="wine-list" id="wine-list"></div>
+
+  <button class="fab" onclick="openAddSheet()">＋</button>
+</div>
+
+<!-- ── PAGE: Tasting Notes ── -->
+<div class="page" id="page-tasting">
+  <div class="page-header">
+    <div class="page-title">Tasting Notes</div>
+    <div class="page-sub" id="tasting-sub">테이스팅 기록</div>
+  </div>
+  <div class="tasting-year-bar" id="tasting-year-bar"></div>
+  <div class="page-content" id="tasting-scroll" style="padding:16px 16px 90px; overflow-y:auto; height:calc(100vh - 148px);">
+    <div id="tasting-list"></div>
+  </div>
+</div>
+
+<!-- ── PAGE: Inventory ── -->
+<div class="page" id="page-inventory">
+  <div class="page-header">
+    <div class="page-title">Inventory</div>
+    <div class="page-sub">재고 관리</div>
+  </div>
+  <div class="inventory-header">병 수를 눌러 재고를 조정하세요</div>
+  <div id="inventory-list" style="padding-bottom:90px;"></div>
+</div>
+
+<!-- ── Bottom Nav ── -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('list',this)">
+    <div class="nav-icon">🍷</div>
+    <div>와인</div>
+  </div>
+  <div class="nav-item" onclick="showPage('tasting',this)">
+    <div class="nav-icon">📝</div>
+    <div>테이스팅</div>
+  </div>
+  <div class="nav-item" onclick="showPage('inventory',this)">
+    <div class="nav-icon">📦</div>
+    <div>재고</div>
+  </div>
+</div>
+
+<!-- ── Detail Sheet ── -->
+<div class="overlay" id="overlay" onclick="closeSheets()"></div>
+<div class="sheet" id="detail-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-content" id="detail-content"></div>
+</div>
+
+<!-- ── Add/Edit Sheet ── -->
+<div class="sheet" id="form-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-content">
+    <div class="sheet-title" id="form-title">새 와인 추가</div>
+    <div class="sheet-subtitle">와인 정보를 입력해주세요</div>
+
+    <div class="form-group">
+      <label class="form-label">LABEL (영문명)</label>
+      <input class="form-input" id="f-label" placeholder="e.g. Borgogno Barolo">
+    </div>
+    <div class="form-group">
+      <label class="form-label">한국어 이름</label>
+      <input class="form-input" id="f-name-kr" placeholder="e.g. 보르고뇨 바롤로">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">품종 (Varietal)</label>
+        <input class="form-input" id="f-varietal" placeholder="e.g. Nebbiolo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">빈티지</label>
+        <input class="form-input" id="f-vintage" placeholder="e.g. 2021" type="number">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">타입</label>
+      <div class="type-selector">
+        <div class="type-option" id="type-red" onclick="selectType('Red')">🍷 레드</div>
+        <div class="type-option" id="type-white" onclick="selectType('White')">🥂 화이트</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">원산지</label>
+      <select class="form-select" id="f-country">
+        <option value="ITALY">🇮🇹 이탈리아</option>
+        <option value="FRANCE">🇫🇷 프랑스</option>
+        <option value="NEW ZEALAND">🇳🇿 뉴질랜드</option>
+        <option value="AUSTRALIA">🇦🇺 호주</option>
+        <option value="U.S.A">🇺🇸 미국</option>
+        <option value="SPAIN">🇪🇸 스페인</option>
+        <option value="ARGENTINA & CHILE">🌎 아르헨티나/칠레</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">구매처 (가격)</label>
+      <input class="form-input" id="f-store-price" placeholder="e.g. 이마트(32,800)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">테이스팅 메모</label>
+      <textarea class="form-textarea" id="f-note" placeholder="향, 맛, 느낌을 자유롭게..."></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-secondary" onclick="closeSheets()">취소</button>
+      <button class="btn btn-primary" onclick="saveWine()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const WINE_DATA = [
+  {id:1,label:"Borgogno Barolo",name_kr:"보르고뇨 바롤로",varietal:"Nebbiolo",type:"Red",vintage:"2018",country:"ITALY",store_price:"트레이더스(87,800)"},
+  {id:2,label:"Le Difese",name_kr:"레 디페제",varietal:"Merlot",type:"Red",vintage:"2021",country:"ITALY",store_price:"새마을(36,900)"},
+  {id:3,label:"Guidalberto",name_kr:"귀달베르토",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2020",country:"ITALY",store_price:"빅보틀(72,900)"},
+  {id:4,label:"Kirkland Chianti",name_kr:"커클 끼끌",varietal:"Sangiovese",type:"Red",vintage:"2021",country:"ITALY",store_price:"코스트코(13,990)"},
+  {id:5,label:"Guidalberto",name_kr:"귀달베르토",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2021",country:"ITALY",store_price:"711(59,920)"},
+  {id:6,label:"LUCENTE",name_kr:"루첸테",varietal:"Merlot",type:"Red",vintage:"2021",country:"ITALY",store_price:"711(29,920)"},
+  {id:7,label:"NO NAME",name_kr:"노네임",varietal:"Nebbiolo",type:"Red",vintage:"2020",country:"ITALY",store_price:"트더(56,980)"},
+  {id:8,label:"PDB Barbaresco",name_kr:"PDB 바르바레스코",varietal:"Nebbiolo",type:"Red",vintage:"2020",country:"ITALY",store_price:"빅보틀(62,900)"},
+  {id:9,label:"CASALE VECCHIO",name_kr:"까살레 베끼오",varietal:"Other Red Varieties",type:"Red",vintage:"2021",country:"ITALY",store_price:"빅보틀(28,900)"},
+  {id:10,label:"Massolino Langhe",name_kr:"마쏠리노 랑게",varietal:"Nebbiolo",type:"Red",vintage:"2021",country:"ITALY",store_price:"빅보틀(41,900)"},
+  {id:11,label:"Luigi PIRA LANGHE",name_kr:"피라 랑게",varietal:"Nebbiolo",type:"Red",vintage:"2022",country:"ITALY",store_price:"새마을(48,900)"},
+  {id:12,label:"Luigi PIRA LANGHE",name_kr:"피라 랑게",varietal:"Nebbiolo",type:"Red",vintage:"2023",country:"ITALY",store_price:"빅보틀(35,000)"},
+  {id:13,label:'BRUNO ROCCA "Fralu"',name_kr:"브루노 로까 랑게",varietal:"Nebbiolo",type:"Red",vintage:"2022",country:"ITALY",store_price:"새마을(72,900)"},
+  {id:14,label:"CAMPO AI SASSI RDM",name_kr:"캄포 아이 사씨 RDM",varietal:"Sangiovese",type:"Red",vintage:"2023",country:"ITALY",store_price:"새마을(41,900)"},
+  {id:15,label:"Le Volte",name_kr:"레볼테",varietal:"Merlot",type:"Red",vintage:"2022",country:"ITALY",store_price:"새마을(34,900)"},
+  {id:16,label:"Veitti Langhe",name_kr:"비에띠 랑게",varietal:"Nebbiolo",type:"Red",vintage:"2022",country:"ITALY",store_price:"새마을(41,900)"},
+  {id:17,label:"NO NAME",name_kr:"노네임",varietal:"Nebbiolo",type:"Red",vintage:"2021",country:"ITALY",store_price:"트더(49,980)"},
+  {id:18,label:"G.D VAIRA ALBE BAROLO",name_kr:"지디 바이라 알베 바롤로",varietal:"Nebbiolo",type:"Red",vintage:"2021",country:"ITALY",store_price:"이마트(54,800)"},
+  {id:19,label:"Marchese Antinori Riserva",name_kr:"마르케제 안티노리",varietal:"Sangiovese",type:"Red",vintage:"2022",country:"ITALY",store_price:"711(65,000)"},
+  {id:20,label:"Chasse Spleen",name_kr:"샤스 스플린",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2020",country:"FRANCE",store_price:"새마을(61,900)"},
+  {id:21,label:"Connetable Talbot",name_kr:"꼬네따블",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2018",country:"FRANCE",store_price:"GS(55,000)"},
+  {id:22,label:"Louis Jadot",name_kr:"루이자도 샤르도네",varietal:"Chardonnay",type:"White",vintage:"2021",country:"FRANCE",store_price:"이마트(32,800)"},
+  {id:23,label:"Torbreck Woodcutters",name_kr:"토브렉 우드커터스",varietal:"Shiraz",type:"Red",vintage:"2022",country:"AUSTRALIA",store_price:"빅보틀(36,900)"},
+  {id:24,label:"Powell&Son",name_kr:"파월앤손",varietal:"Grenache",type:"Red",vintage:"2021",country:"AUSTRALIA",store_price:"조양마트(22,800)"},
+  {id:25,label:"The Boxer",name_kr:"몰리두커 더복서",varietal:"Shiraz",type:"Red",vintage:"2023",country:"AUSTRALIA",store_price:"이마트(34,400)"},
+  {id:26,label:"Pounamu",name_kr:"푸나무",varietal:"Sauvignon Blanc",type:"White",vintage:"2022",country:"NEW ZEALAND",store_price:"이마트(21,900)"},
+  {id:27,label:"Grove Mill",name_kr:"그로브밀 피노그리",varietal:"Pinot Gris",type:"White",vintage:"2023",country:"NEW ZEALAND",store_price:"GS(21,800)"},
+  {id:28,label:"Kirkland Sauvignon Blanc",name_kr:"커클 쇼비뇽",varietal:"Sauvignon Blanc",type:"White",vintage:"2023",country:"NEW ZEALAND",store_price:"코스트코(11,490)"},
+  {id:29,label:"Greywacke",name_kr:"그레이왁",varietal:"Sauvignon Blanc",type:"White",vintage:"2023",country:"NEW ZEALAND",store_price:"빅보틀(36,900)"},
+  {id:30,label:"Babichi",name_kr:"배비치",varietal:"Sauvignon Blanc",type:"White",vintage:"2024",country:"NEW ZEALAND",store_price:"이마트(19,800)"},
+  {id:31,label:"RUSSIAN JACK",name_kr:"러시안잭",varietal:"Sauvignon Blanc",type:"White",vintage:"2024",country:"NEW ZEALAND",store_price:"새마을(21,900)"},
+  {id:32,label:"TAPI",name_kr:"타피 피노",varietal:"Pinot Noir",type:"Red",vintage:"2021",country:"NEW ZEALAND",store_price:"와인리스트(27,000)"},
+  {id:33,label:"TIRAKI",name_kr:"티라키",varietal:"Sauvignon Blanc",type:"White",vintage:"2024",country:"NEW ZEALAND",store_price:"새마을(21,900)"},
+  {id:34,label:"Textbook",name_kr:"텍스트북",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2020",country:"U.S.A",store_price:"이마트(59,800)"},
+  {id:35,label:"Au Bon Climat",name_kr:"오봉클리마",varietal:"Pinot Noir",type:"Red",vintage:"2022",country:"U.S.A",store_price:"코스트코(29,590)"},
+  {id:36,label:"Textbook",name_kr:"텍스트북",varietal:"Cabernet Sauvignon",type:"Red",vintage:"2021",country:"U.S.A",store_price:"선물"},
+  {id:37,label:"Lan RESERVA",name_kr:"란 리제르바",varietal:"Other Red Varieties",type:"Red",vintage:"2015",country:"SPAIN",store_price:"이마트(24,800)"},
+  {id:38,label:"Roger Goulart Cava Rose",name_kr:"로저 구라트 까바 로제",varietal:"Other White Varieties",type:"White",vintage:"2022",country:"SPAIN",store_price:"트더(19,900)"},
+  {id:39,label:"Roger Goulart Rose MILLESIM",name_kr:"로저 구라트 로제 밀레짐",varietal:"Other White Varieties",type:"White",vintage:"2022",country:"SPAIN",store_price:"와인리스트(27,000)"},
+  {id:40,label:"TRIPLE C",name_kr:"트리플 C",varietal:"Cabernet Franc",type:"Red",vintage:"2021",country:"ARGENTINA & CHILE",store_price:"이마트(29,600)"},
+  {id:41,label:"EL ENEMIGO",name_kr:"엘 에네미고 카베르네 프랑",varietal:"Cabernet Franc",type:"Red",vintage:"2020",country:"ARGENTINA & CHILE",store_price:"새마을(36,900)"},
+];
+
+const TASTING_DATA = [
+  {year:2026,num:1,label:"TRIPLE C",date:"2026.01.15",note:""},
+  {year:2026,num:2,label:"BORGO BORELLI BAROLO",date:"2026.03.15",note:""},
+  {year:2025,num:1,label:"CALERA",date:"2025.01.01",note:"새해 첫 와인으로 손색이 없었음.\n오봉과 비교해도 전혀 밀리지 않을 정도의 최고의 데일리 피노.\n스월링하지 않아도 뿜어져 나오는 장미꽃향이 지배적이었음. 과실향보다는 허브향이 더 지배적이었음.\n보인다면 더 사고싶었고, 2024년 TOP 10에 들어도 이상하지 않을정도의 최고였음.\n이탈리아와인보다 확실히 향이 좋았음. 피노는 피노."},
+  {year:2025,num:2,label:"Kirkland Sauvignon Blanc",date:"2025.01.19",note:"일요일 저녁에 마신 쇼블.\n산도가 너무 튀는 느낌이었음. 예전에 느꼈던 감동을 느낄 수 없었음."},
+  {year:2025,num:3,label:"ETNA ROSSO",date:"2025.01.25",note:"처음 느낌은 산딸기 풍부한 향과 맛. 오봉과 결이 같은 느낌. 두잔째는 가죽향이랑 얼떨한 향이 올라옴. 끼안띠 느낌. 그리고는 베리향이 살아나면서 부르고뉴. 과실향과 얼떨함이 베이스로 가면서 라이트하고 피니쉬 길고 좋음. 지날수록 베리향이 강조됨."},
+  {year:2025,num:4,label:"Pascal Jolivet Attitude",date:"2025.01.28",note:"노란색. 향은 샤르도네 같음. 첫 모금에서도 산도는 안느껴지고 무거운 느낌. 블라인드 했으면 쇼블은 절대 안나왔을 듯.\n높은 산도는 아니지만 산도가 없진 않은 느낌. 둥근 느낌을 고급스럽다고 표현하는것인가 싶었음."},
+  {year:2025,num:5,label:"Chateau Greysac",date:"2025.02.16",note:"올빈에 대한 경험을 해본 것으로 만족."},
+  {year:2025,num:6,label:"BOHIGAS EXTRA",date:"2025.03.08",note:"조단이네 초대 식전주. 좀 질리는 느낌.\n그치만 여전히 부담없고 무난한 식전주.\n스파클링이 주는 효과는 무시 못함."},
+  {year:2025,num:7,label:"PIO CESARE LANGHE",date:"2025.03.14",note:"화이트데이 와인 데이트. 장미향이 인상적이었던 와인으로 기억.\n가격에 비해 드라마틱한 느낌은 없었음.\n사실 이 가격이라면 충분한 대안이 많지 않을까 생각했음."},
+  {year:2024,num:1,label:"E.Guigal Cotes du Rhone",date:"2024.01.27",note:"과일향, 아로마 강함.\n약간 가죽향이 나고, 적당한 산도 밸런스가 너무 좋다.\n중반까지 변함없이 쭉 이어짐.\n재구매의사 있음. 데일리로 아주 좋은 듯."},
+  {year:2024,num:2,label:"Kirkland Chianti",date:"",note:"첫향 과실향 폭발 그 후 쿰쿰함.\n끼안띠 특성.\n색 진한루비 1/3 남겨두고 끼안띠 맛 향 폭발.\n커피향 타닌 맛 완벽"},
+];
+
+// ── STATE ──
+let wines = JSON.parse(localStorage.getItem('wines') || 'null') || WINE_DATA.map(w => ({...w, fav: false, stock: 1, note: ''}));
+let nextId = Math.max(...wines.map(w => w.id)) + 1;
+let currentFilter = 'all';
+let favFilter = false;
+let editingId = null;
+let selectedType = '';
+
+function saveWines() {
+  localStorage.setItem('wines', JSON.stringify(wines));
+}
+
+// ── INVENTORY STATE ──
+let inventory = JSON.parse(localStorage.getItem('inventory') || 'null') || {};
+function getStock(id) { return inventory[id] !== undefined ? inventory[id] : 1; }
+function setStock(id, val) {
+  inventory[id] = Math.max(0, val);
+  localStorage.setItem('inventory', JSON.stringify(inventory));
+}
+
+// ── FILTER ──
+function setFilter(val, el) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+function toggleFavFilter() {
+  favFilter = !favFilter;
+  document.getElementById('fav-filter-btn').classList.toggle('active', favFilter);
+  document.getElementById('fav-filter-btn').textContent = favFilter ? '♥' : '♡';
+  renderList();
+}
+
+function getFiltered() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  return wines.filter(w => {
+    const matchType = currentFilter === 'all' || w.type?.toLowerCase() === currentFilter || w.country === currentFilter;
+    const matchSearch = !q || w.label.toLowerCase().includes(q) || w.name_kr.includes(q) || w.varietal.toLowerCase().includes(q);
+    const matchFav = !favFilter || w.fav;
+    return matchType && matchSearch && matchFav;
+  });
+}
+
+// ── RENDER LIST ──
+function renderList() {
+  const filtered = getFiltered();
+  const container = document.getElementById('wine-list');
+
+  // Stats
+  document.getElementById('stat-total').textContent = wines.length;
+  document.getElementById('stat-red').textContent = wines.filter(w => w.type === 'Red').length;
+  document.getElementById('stat-white').textContent = wines.filter(w => w.type === 'White').length;
+  document.getElementById('stat-fav').textContent = wines.filter(w => w.fav).length;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🍷</div><div class="empty-text">검색 결과가 없어요</div></div>`;
+    return;
+  }
+
+  // Group by country
+  const groups = {};
+  filtered.forEach(w => {
+    if (!groups[w.country]) groups[w.country] = [];
+    groups[w.country].push(w);
+  });
+
+  const countryLabels = {
+    'ITALY':'🇮🇹 이탈리아','FRANCE':'🇫🇷 프랑스','AUSTRALIA':'🇦🇺 호주',
+    'NEW ZEALAND':'🇳🇿 뉴질랜드','U.S.A':'🇺🇸 미국','SPAIN':'🇪🇸 스페인',
+    'ARGENTINA & CHILE':'🌎 아르헨티나/칠레','기타':'🌍 기타'
+  };
+
+  let html = '';
+  Object.entries(groups).forEach(([country, wineList]) => {
+    html += `<div class="country-section"><div class="country-label">${countryLabels[country]||country}</div>`;
+    wineList.forEach(w => {
+      const priceMatch = w.store_price?.match(/\(([^)]+)\)/);
+      const price = priceMatch ? '₩'+priceMatch[1] : (w.store_price || '');
+      const store = w.store_price?.replace(/\([^)]+\)/,'') || '';
+      html += `
+        <div class="wine-card" onclick="openDetail(${w.id})">
+          <div class="wine-type-bar ${w.type==='Red'?'red':'white'}"></div>
+          <div class="wine-info">
+            <div class="wine-label">${w.label}</div>
+            <div class="wine-name-kr">${w.name_kr||''}</div>
+            <div class="wine-tags">
+              <span class="tag ${w.type==='Red'?'type-red':'type-white'}">${w.type==='Red'?'레드':'화이트'}</span>
+              <span class="tag">${w.varietal||''}</span>
+              ${w.vintage?`<span class="tag vintage">${w.vintage}</span>`:''}
+            </div>
+          </div>
+          <div class="wine-right">
+            <div class="fav-btn" onclick="toggleFav(event,${w.id})">${w.fav?'♥':'♡'}</div>
+            <div>
+              <div class="wine-price">${price}</div>
+              <div class="wine-store">${store}</div>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function toggleFav(e, id) {
+  e.stopPropagation();
+  const w = wines.find(x => x.id === id);
+  if (w) {
+    w.fav = !w.fav;
+    saveWines();
+    renderList();
+    showToast(w.fav ? '♥ 즐겨찾기 추가' : '즐겨찾기 해제');
+  }
+}
+
+// ── DETAIL ──
+function openDetail(id) {
+  const w = wines.find(x => x.id === id);
+  if (!w) return;
+  const priceMatch = w.store_price?.match(/\(([^)]+)\)/);
+  const price = priceMatch ? '₩'+priceMatch[1] : '';
+  const store = w.store_price?.replace(/\([^)]+\)/,'').trim() || '';
+
+  const countryLabels = {
+    'ITALY':'🇮🇹 이탈리아','FRANCE':'🇫🇷 프랑스','AUSTRALIA':'🇦🇺 호주',
+    'NEW ZEALAND':'🇳🇿 뉴질랜드','U.S.A':'🇺🇸 미국','SPAIN':'🇪🇸 스페인',
+    'ARGENTINA & CHILE':'🌎 아르헨티나/칠레'
+  };
+
+  document.getElementById('detail-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="width:6px;height:44px;border-radius:4px;background:${w.type==='Red'?'var(--red-wine)':'var(--gold)'};flex-shrink:0"></div>
+      <div>
+        <div class="sheet-title">${w.label}</div>
+        <div class="sheet-subtitle">${w.name_kr||''}</div>
+      </div>
+    </div>
+
+    <div class="detail-row"><span class="detail-key">타입</span><span class="detail-val">${w.type==='Red'?'🍷 레드':'🥂 화이트'}</span></div>
+    <div class="detail-row"><span class="detail-key">품종</span><span class="detail-val">${w.varietal||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">빈티지</span><span class="detail-val">${w.vintage||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">원산지</span><span class="detail-val">${countryLabels[w.country]||w.country}</span></div>
+    <div class="detail-row"><span class="detail-key">구매처</span><span class="detail-val">${store||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">가격</span><span class="detail-val">${price||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">재고</span><span class="detail-val">${getStock(w.id)}병</span></div>
+
+    ${w.note ? `
+    <div class="tasting-note">
+      <div class="tasting-note-title">📝 테이스팅 메모</div>
+      ${w.note}
+    </div>` : ''}
+
+    <div class="sheet-actions">
+      <button class="btn btn-danger" onclick="deleteWine(${w.id})">삭제</button>
+      <button class="btn btn-secondary" onclick="openEditSheet(${w.id})">수정</button>
+      <button class="btn btn-primary" onclick="toggleFavDetail(${w.id})">${w.fav?'♥ 즐겨찾기':'♡ 즐겨찾기'}</button>
+    </div>
+  `;
+  openSheet('detail-sheet');
+}
+
+function toggleFavDetail(id) {
+  const w = wines.find(x => x.id === id);
+  if (w) { w.fav = !w.fav; saveWines(); renderList(); openDetail(id); }
+}
+
+function deleteWine(id) {
+  if (!confirm('정말 삭제할까요?')) return;
+  wines = wines.filter(w => w.id !== id);
+  saveWines();
+  closeSheets();
+  renderList();
+  showToast('삭제됐어요');
+}
+
+// ── ADD / EDIT ──
+function openAddSheet() {
+  editingId = null;
+  selectedType = '';
+  document.getElementById('form-title').textContent = '새 와인 추가';
+  document.getElementById('f-label').value = '';
+  document.getElementById('f-name-kr').value = '';
+  document.getElementById('f-varietal').value = '';
+  document.getElementById('f-vintage').value = '';
+  document.getElementById('f-country').value = 'ITALY';
+  document.getElementById('f-store-price').value = '';
+  document.getElementById('f-note').value = '';
+  ['type-red','type-white'].forEach(id => document.getElementById(id).className='type-option');
+  openSheet('form-sheet');
+}
+
+function openEditSheet(id) {
+  const w = wines.find(x => x.id === id);
+  if (!w) return;
+  editingId = id;
+  selectedType = w.type || '';
+  document.getElementById('form-title').textContent = '와인 수정';
+  document.getElementById('f-label').value = w.label;
+  document.getElementById('f-name-kr').value = w.name_kr || '';
+  document.getElementById('f-varietal').value = w.varietal || '';
+  document.getElementById('f-vintage').value = w.vintage || '';
+  document.getElementById('f-country').value = w.country;
+  document.getElementById('f-store-price').value = w.store_price || '';
+  document.getElementById('f-note').value = w.note || '';
+  ['type-red','type-white'].forEach(id => document.getElementById(id).className='type-option');
+  if (w.type === 'Red') document.getElementById('type-red').className = 'type-option selected-red';
+  if (w.type === 'White') document.getElementById('type-white').className = 'type-option selected-white';
+  closeSheets();
+  setTimeout(() => openSheet('form-sheet'), 50);
+}
+
+function selectType(t) {
+  selectedType = t;
+  document.getElementById('type-red').className = t==='Red' ? 'type-option selected-red' : 'type-option';
+  document.getElementById('type-white').className = t==='White' ? 'type-option selected-white' : 'type-option';
+}
+
+function saveWine() {
+  const label = document.getElementById('f-label').value.trim();
+  if (!label) { showToast('라벨명을 입력해주세요'); return; }
+  const data = {
+    label,
+    name_kr: document.getElementById('f-name-kr').value.trim(),
+    varietal: document.getElementById('f-varietal').value.trim(),
+    vintage: document.getElementById('f-vintage').value.trim(),
+    type: selectedType,
+    country: document.getElementById('f-country').value,
+    store_price: document.getElementById('f-store-price').value.trim(),
+    note: document.getElementById('f-note').value.trim(),
+  };
+  if (editingId) {
+    const idx = wines.findIndex(w => w.id === editingId);
+    if (idx > -1) wines[idx] = {...wines[idx], ...data};
+  } else {
+    wines.push({id: nextId++, fav: false, ...data});
+  }
+  saveWines();
+  closeSheets();
+  renderList();
+  showToast(editingId ? '수정됐어요 ✓' : '추가됐어요 🍷');
+}
+
+// ── TASTING NOTES ──
+let tastingScrollListener = null;
+
+function renderTasting() {
+  const groups = {};
+  TASTING_DATA.forEach(t => {
+    if (!groups[t.year]) groups[t.year] = [];
+    groups[t.year].push(t);
+  });
+  const years = Object.keys(groups).map(Number).sort((a,b)=>b-a);
+
+  // Build year pill bar
+  const bar = document.getElementById('tasting-year-bar');
+  bar.innerHTML = years.map(y => `
+    <div class="year-pill" id="pill-${y}" onclick="scrollToYear(${y})">
+      <span class="y-num">${y}</span>
+      <span class="y-count">${groups[y].length}개</span>
+    </div>
+  `).join('');
+
+  // Build content
+  let html = '';
+  years.forEach(year => {
+    const notes = groups[year];
+    html += `<div class="tasting-year-section" id="year-section-${year}">
+      <div class="tasting-year-heading">
+        <div class="y-title">${year}</div>
+        <div class="y-line"></div>
+        <div class="y-badge">${notes.length}개의 기록</div>
+      </div>`;
+    notes.forEach(t => {
+      html += `
+        <div class="tasting-card">
+          <div class="tasting-header">
+            <div>
+              <div class="tasting-label">${t.label}</div>
+              <div class="tasting-date">${t.date}</div>
+            </div>
+            <div class="tasting-num">#${t.num}</div>
+          </div>
+          ${t.note ? `<div class="tasting-text">${t.note}</div>` : '<div style="font-size:13px;color:var(--text-soft);font-style:italic">기록 없음</div>'}
+        </div>`;
+    });
+    html += '</div><div style="height:8px"></div>';
+  });
+  document.getElementById('tasting-list').innerHTML = html;
+
+  // Activate first pill
+  setActivePill(years[0]);
+
+  // Scroll spy
+  const scrollEl = document.getElementById('tasting-scroll');
+  if (tastingScrollListener) scrollEl.removeEventListener('scroll', tastingScrollListener);
+  tastingScrollListener = () => {
+    let current = years[0];
+    years.forEach(y => {
+      const sec = document.getElementById('year-section-'+y);
+      if (sec && sec.getBoundingClientRect().top <= 120) current = y;
+    });
+    setActivePill(current);
+  };
+  scrollEl.addEventListener('scroll', tastingScrollListener, {passive: true});
+
+  // Update subtitle
+  const total = TASTING_DATA.length;
+  document.getElementById('tasting-sub').textContent = `총 ${total}개의 테이스팅 기록`;
+}
+
+function scrollToYear(year) {
+  const sec = document.getElementById('year-section-'+year);
+  const scrollEl = document.getElementById('tasting-scroll');
+  if (sec && scrollEl) {
+    const offset = sec.offsetTop - 8;
+    scrollEl.scrollTo({ top: offset, behavior: 'smooth' });
+  }
+  setActivePill(year);
+}
+
+function setActivePill(year) {
+  document.querySelectorAll('.year-pill').forEach(p => p.classList.remove('active'));
+  const pill = document.getElementById('pill-'+year);
+  if (pill) {
+    pill.classList.add('active');
+    pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+}
+
+// ── INVENTORY ──
+function renderInventory() {
+  const groups = {};
+  wines.forEach(w => {
+    if (!groups[w.country]) groups[w.country] = [];
+    groups[w.country].push(w);
+  });
+
+  const countryLabels = {
+    'ITALY':'🇮🇹 이탈리아','FRANCE':'🇫🇷 프랑스','AUSTRALIA':'🇦🇺 호주',
+    'NEW ZEALAND':'🇳🇿 뉴질랜드','U.S.A':'🇺🇸 미국','SPAIN':'🇪🇸 스페인',
+    'ARGENTINA & CHILE':'🌎 아르헨티나/칠레','기타':'🌍 기타'
+  };
+
+  let html = '';
+  Object.entries(groups).forEach(([country, wineList]) => {
+    html += `<div class="inv-group"><div class="inv-group-title">${countryLabels[country]||country}</div>`;
+    wineList.forEach(w => {
+      html += `
+        <div class="inv-row">
+          <div class="inv-dot ${w.type==='Red'?'red':'white'}"></div>
+          <div class="inv-name">${w.label}<br><span style="font-size:11px;color:var(--text-soft)">${w.vintage||''}</span></div>
+          <div class="inv-count">
+            <div class="inv-btn" onclick="adjustStock(${w.id},-1,this)">−</div>
+            <div class="inv-num" id="inv-${w.id}">${getStock(w.id)}</div>
+            <div class="inv-btn" onclick="adjustStock(${w.id},1,this)">+</div>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('inventory-list').innerHTML = html;
+}
+
+function adjustStock(id, delta, btn) {
+  const newVal = getStock(id) + delta;
+  if (newVal < 0) return;
+  setStock(id, newVal);
+  const el = document.getElementById('inv-'+id);
+  if (el) el.textContent = newVal;
+  btn.style.transform = 'scale(0.85)';
+  setTimeout(() => btn.style.transform = '', 150);
+}
+
+// ── SHEETS ──
+function openSheet(id) {
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById(id).classList.add('visible');
+}
+function closeSheets() {
+  document.getElementById('overlay').classList.remove('visible');
+  ['detail-sheet','form-sheet'].forEach(id => document.getElementById(id).classList.remove('visible'));
+}
+
+// ── NAV ──
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  if (name === 'tasting') renderTasting();
+  if (name === 'inventory') renderInventory();
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── INIT ──
+renderList();
+</script>
+</body>
+</html>
