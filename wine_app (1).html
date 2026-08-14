@@ -342,8 +342,10 @@
     transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
     max-height: 92vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .sheet.visible { transform: translateX(-50%) translateY(0); }
+  body.sheet-open { overflow: hidden; }
 
   .sheet-handle {
     width: 40px; height: 4px;
@@ -1513,14 +1515,56 @@ function adjustStock(id, delta, btn) {
 function openSheet(id) {
   document.getElementById('overlay').classList.add('visible');
   document.getElementById(id).classList.add('visible');
+  document.body.classList.add('sheet-open');
 }
 function closeSheets() {
   document.getElementById('overlay').classList.remove('visible');
   ['detail-sheet','form-sheet','drink-sheet'].forEach(id => document.getElementById(id).classList.remove('visible'));
+  document.body.classList.remove('sheet-open');
 }
 function closeDrinkSheet() {
   document.getElementById('drink-sheet').classList.remove('visible');
   openDetail(drankingWineId);
+}
+
+// ── SWIPE DOWN TO DISMISS ──
+function initSheetSwipe() {
+  document.querySelectorAll('.sheet').forEach(sheet => {
+    let startY = 0, deltaY = 0, dragging = false, active = false;
+
+    sheet.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+      deltaY = 0;
+      dragging = false;
+      active = sheet.scrollTop <= 0;
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', e => {
+      const rawDelta = e.touches[0].clientY - startY;
+      if (!active || rawDelta <= 0) return;
+      dragging = true;
+      deltaY = rawDelta;
+      sheet.style.transition = 'none';
+      sheet.style.transform = `translateX(-50%) translateY(${deltaY}px)`;
+      e.preventDefault();
+    }, { passive: false });
+
+    const onEnd = () => {
+      if (dragging) {
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+        if (deltaY > 90) {
+          if (sheet.id === 'drink-sheet') closeDrinkSheet();
+          else closeSheets();
+        }
+      }
+      dragging = false;
+      active = false;
+      deltaY = 0;
+    };
+    sheet.addEventListener('touchend', onEnd);
+    sheet.addEventListener('touchcancel', onEnd);
+  });
 }
 
 // ── OPEN DRINK SHEET ──
@@ -1742,6 +1786,7 @@ function showToast(msg) {
 
 // ── INIT ──
 renderList();
+initSheetSwipe();
 syncFromSheet(false);
 setInterval(() => syncFromSheet(false), SHEET_SYNC_INTERVAL_MS);
 </script>
