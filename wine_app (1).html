@@ -80,6 +80,9 @@
   }
   .icon-btn:active { transform: scale(0.93); background: var(--warm-white); }
   .icon-btn.active { border-color: var(--accent); background: var(--accent); color: white; }
+  .icon-btn.syncing { animation: spin 0.8s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .sync-label { font-size: 11px; color: var(--text-soft); text-align: right; margin-top: 8px; }
 
   /* Search */
   .search-wrap {
@@ -697,6 +700,7 @@
     <div class="header-top">
       <div class="logo">Wine <span>Cellar</span></div>
       <div class="header-actions">
+        <div class="icon-btn" onclick="syncFromSheet(true)" id="sync-btn" title="구글시트 동기화">🔄</div>
         <div class="icon-btn" onclick="toggleFavFilter()" id="fav-filter-btn" title="즐겨찾기">♡</div>
       </div>
     </div>
@@ -704,6 +708,7 @@
       <span class="search-icon">🔍</span>
       <input class="search-input" id="search-input" placeholder="와인 이름으로 검색..." oninput="renderList()" />
     </div>
+    <div class="sync-label" id="sync-label"></div>
   </div>
 
   <div class="filter-section">
@@ -979,9 +984,146 @@ const TASTING_DATA = [
   {year:2024,num:2,label:"Kirkland Chianti",date:"",note:"첫향 과실향 폭발 그 후 쿰쿰함.\n끼안띠 특성.\n색 진한루비 1/3 남겨두고 끼안띠 맛 향 폭발.\n커피향 타닌 맛 완벽"},
 ];
 
+// ── GOOGLE SHEET SYNC ──
+// "Wine List" 탭을 CSV로 읽어와서 와인 목록/재고를 동기화한다.
+// 구글시트 구조: [이름,개수] 형태의 국가 헤더 → "Label,Varietal,Type,VIN,이름,,,구매처(가격)" 헤더 → 와인 행들(빈 줄까지).
+// 같은 와인(Label+VIN+Varietal)이 여러 줄 반복되면 그 줄 수 = 보유 병 수로 계산한다.
+const SHEET_ID = '1ablf-mCKqzkjvrQAGW2K0hfxIKp7i9ubSxkBKPfJXZ8';
+const SHEET_GID = '0';
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+const SHEET_SYNC_INTERVAL_MS = 60000;
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else field += c;
+    }
+  }
+  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function slugify(s) {
+  return (s || '').toString().trim().toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function parseSheetToWines(csvText) {
+  const rows = parseCSV(csvText);
+  const rawRows = [];
+  let i = 0;
+  while (i < rows.length) {
+    const row = rows[i] || [];
+    const col0 = (row[0] || '').trim();
+    const col1 = (row[1] || '').trim();
+    if (col0 && col1 && /^\d+$/.test(col1)) {
+      const country = col0;
+      i++;
+      while (i < rows.length && (rows[i][0] || '').trim() === '') i++;
+      if (i < rows.length && (rows[i][0] || '').trim().toLowerCase() === 'label') {
+        i++;
+        while (i < rows.length && (rows[i][0] || '').trim() !== '') {
+          const r = rows[i];
+          rawRows.push({
+            label: (r[0] || '').trim(),
+            varietal: (r[1] || '').trim(),
+            type: (r[2] || '').trim().toUpperCase() === 'W' ? 'White' : (r[2] || '').trim().toUpperCase() === 'R' ? 'Red' : '',
+            vintage: (r[3] || '').trim(),
+            name_kr: (r[4] || '').trim(),
+            store_price: (r[7] || '').trim(),
+            country,
+          });
+          i++;
+        }
+        continue;
+      }
+    }
+    i++;
+  }
+
+  const groups = new Map();
+  rawRows.forEach(r => {
+    const key = [r.label, r.vintage, r.varietal].join('|').toLowerCase();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+
+  const sheetWines = [];
+  groups.forEach(items => {
+    const first = items.find(x => x.store_price) || items[0];
+    const id = 'sheet-' + slugify(first.label) + '-' + slugify(first.vintage) + '-' + slugify(first.varietal);
+    sheetWines.push({
+      id,
+      label: first.label,
+      name_kr: first.name_kr,
+      varietal: first.varietal,
+      type: first.type || 'Red',
+      vintage: first.vintage,
+      country: first.country,
+      store_price: first.store_price,
+      stock: items.length,
+    });
+  });
+  return sheetWines;
+}
+
+let lastSyncTime = null;
+function updateSyncLabel() {
+  const el = document.getElementById('sync-label');
+  if (!el) return;
+  if (!lastSyncTime) { el.textContent = ''; return; }
+  const hh = String(lastSyncTime.getHours()).padStart(2, '0');
+  const mm = String(lastSyncTime.getMinutes()).padStart(2, '0');
+  el.textContent = `🔄 마지막 동기화 ${hh}:${mm}`;
+}
+
+async function syncFromSheet(manual) {
+  const btn = document.getElementById('sync-btn');
+  if (btn) btn.classList.add('syncing');
+  try {
+    const res = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const sheetWines = parseSheetToWines(text);
+    if (!sheetWines.length) throw new Error('empty');
+
+    const prevById = {};
+    wines.forEach(w => { prevById[w.id] = w; });
+
+    wines = sheetWines.map(w => ({
+      ...w,
+      fav: prevById[w.id] ? !!prevById[w.id].fav : false,
+      note: prevById[w.id] ? (prevById[w.id].note || '') : '',
+    }));
+    saveWines();
+    wines.forEach(w => setStock(w.id, w.stock));
+
+    lastSyncTime = new Date();
+    updateSyncLabel();
+    renderList();
+    const invPage = document.getElementById('page-inventory');
+    if (invPage && invPage.classList.contains('active')) renderInventory();
+    if (manual) showToast(`🔄 동기화 완료 (${wines.length}개 와인)`);
+  } catch (e) {
+    console.error('sheet sync failed', e);
+    if (manual) showToast('❌ 동기화 실패 - 연결을 확인해주세요');
+  } finally {
+    if (btn) btn.classList.remove('syncing');
+  }
+}
+
 // ── STATE ──
 let wines = JSON.parse(localStorage.getItem('wines') || 'null') || WINE_DATA.map(w => ({...w, fav: false, stock: 1, note: ''}));
-let nextId = Math.max(...wines.map(w => w.id)) + 1;
+let nextId = Math.max(0, ...wines.map(w => typeof w.id === 'number' ? w.id : 0)) + 1;
 let currentFilter = 'all';
 let favFilter = false;
 let editingId = null;
@@ -1600,6 +1742,8 @@ function showToast(msg) {
 
 // ── INIT ──
 renderList();
+syncFromSheet(false);
+setInterval(() => syncFromSheet(false), SHEET_SYNC_INTERVAL_MS);
 </script>
 </body>
 </html>
