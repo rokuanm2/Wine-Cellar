@@ -993,7 +993,6 @@ const TASTING_DATA = [
 const SHEET_ID = '1ablf-mCKqzkjvrQAGW2K0hfxIKp7i9ubSxkBKPfJXZ8';
 const SHEET_GID = '0';
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
-const SHEET_SYNC_INTERVAL_MS = 60000;
 
 function parseCSV(text) {
   const rows = [];
@@ -1083,9 +1082,10 @@ function updateSyncLabel() {
   const el = document.getElementById('sync-label');
   if (!el) return;
   if (!lastSyncTime) { el.textContent = ''; return; }
-  const hh = String(lastSyncTime.getHours()).padStart(2, '0');
-  const mm = String(lastSyncTime.getMinutes()).padStart(2, '0');
-  el.textContent = `🔄 마지막 동기화 ${hh}:${mm}`;
+  const yyyy = lastSyncTime.getFullYear();
+  const dd = String(lastSyncTime.getDate()).padStart(2, '0');
+  const mm = String(lastSyncTime.getMonth() + 1).padStart(2, '0');
+  el.textContent = `🔄 마지막 동기화 ${yyyy}.${dd}.${mm}`;
 }
 
 async function syncFromSheet(manual) {
@@ -1821,8 +1821,6 @@ function showToast(msg) {
 // ── INIT ──
 renderList();
 initSheetSwipe();
-syncFromSheet(false);
-setInterval(() => syncFromSheet(false), SHEET_SYNC_INTERVAL_MS);
 </script>
 </body>
 </html>
