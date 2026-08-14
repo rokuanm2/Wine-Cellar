@@ -1107,7 +1107,27 @@ async function syncFromSheet(manual) {
       note: prevById[w.id] ? (prevById[w.id].note || '') : '',
     }));
     saveWines();
-    wines.forEach(w => setStock(w.id, w.stock));
+
+    const newIds = new Set(wines.map(w => w.id));
+    Object.keys(pendingDelta).forEach(id => { if (!newIds.has(id)) delete pendingDelta[id]; });
+    Object.keys(lastSyncedSheetStock).forEach(id => { if (!newIds.has(id)) delete lastSyncedSheetStock[id]; });
+
+    wines.forEach(w => {
+      const prevSheetStock = lastSyncedSheetStock[w.id];
+      let delta = pendingDelta[w.id] || 0;
+      if (prevSheetStock !== undefined && delta !== 0) {
+        // 시트가 내가 만든 변화량 방향으로 움직인 만큼만 펜딩값을 상쇄한다.
+        const movedTowardTarget = delta > 0
+          ? Math.max(0, w.stock - prevSheetStock)
+          : Math.max(0, prevSheetStock - w.stock);
+        const remaining = Math.max(0, Math.abs(delta) - movedTowardTarget);
+        delta = Math.sign(delta) * remaining;
+      }
+      pendingDelta[w.id] = delta;
+      lastSyncedSheetStock[w.id] = w.stock;
+      setStock(w.id, Math.max(0, w.stock + delta));
+    });
+    savePending();
 
     lastSyncTime = new Date();
     updateSyncLabel();
@@ -1141,6 +1161,16 @@ function getStock(id) { return inventory[id] !== undefined ? inventory[id] : 1; 
 function setStock(id, val) {
   inventory[id] = Math.max(0, val);
   localStorage.setItem('inventory', JSON.stringify(inventory));
+}
+
+// 앱에서 마시거나 재고를 조정한 값 중 아직 구글시트에 반영 안 된 차이를 기록해둔다.
+// 다음 동기화 때 시트 값을 그대로 덮어쓰지 않고, 이 차이를 계속 얹어서 보여준다.
+// 나중에 시트를 직접 고치면(행 삭제/추가) 그만큼 자동으로 상쇄되어 사라진다.
+let pendingDelta = JSON.parse(localStorage.getItem('pendingDelta') || '{}');
+let lastSyncedSheetStock = JSON.parse(localStorage.getItem('lastSyncedSheetStock') || '{}');
+function savePending() {
+  localStorage.setItem('pendingDelta', JSON.stringify(pendingDelta));
+  localStorage.setItem('lastSyncedSheetStock', JSON.stringify(lastSyncedSheetStock));
 }
 
 // ── DRANK LOG STATE ──
@@ -1222,7 +1252,7 @@ function renderList() {
               <span class="tag ${w.type==='Red'?'type-red':'type-white'}">${w.type==='Red'?'레드':'화이트'}</span>
               <span class="tag">${w.varietal||''}</span>
               ${w.vintage?`<span class="tag vintage">${w.vintage}</span>`:''}
-              <span class="tag stock-tag" style="background:${getStock(w.id)===0?'#fff0f0':'#f0f8f0'};color:${getStock(w.id)===0?'#c0392b':'#2d7a3a'}">${getStock(w.id)===0?'품절':'🗄 '+getStock(w.id)+'병'}</span>
+              <span class="tag stock-tag" style="background:${getStock(w.id)===0?'#fff0f0':'#f0f8f0'};color:${getStock(w.id)===0?'#c0392b':'#2d7a3a'}">${getStock(w.id)===0?'품절':'🗄 '+getStock(w.id)+'병'}${pendingDelta[w.id]?' <span title="구글시트에 아직 반영 안 됨" style="opacity:.65">✎</span>':''}</span>
             </div>
           </div>
           <div class="wine-right">
@@ -1279,7 +1309,7 @@ function openDetail(id) {
     <div class="detail-row"><span class="detail-key">원산지</span><span class="detail-val">${countryLabels[w.country]||w.country}</span></div>
     <div class="detail-row"><span class="detail-key">구매처</span><span class="detail-val">${store||'—'}</span></div>
     <div class="detail-row"><span class="detail-key">가격</span><span class="detail-val">${price||'—'}</span></div>
-    <div class="detail-row"><span class="detail-key">재고</span><span class="detail-val">${getStock(w.id)}병</span></div>
+    <div class="detail-row"><span class="detail-key">재고</span><span class="detail-val">${getStock(w.id)}병${pendingDelta[w.id]?' <span title="구글시트에 아직 반영 안 됨" style="opacity:.6;font-size:11px">✎ 시트 미반영</span>':''}</span></div>
 
     ${w.note ? `
     <div class="tasting-note">
@@ -1505,6 +1535,8 @@ function adjustStock(id, delta, btn) {
   const newVal = getStock(id) + delta;
   if (newVal < 0) return;
   setStock(id, newVal);
+  pendingDelta[id] = (pendingDelta[id] || 0) + delta;
+  savePending();
   const el = document.getElementById('inv-'+id);
   if (el) el.textContent = newVal;
   btn.style.transform = 'scale(0.85)';
@@ -1601,8 +1633,10 @@ function confirmDrank() {
   });
   saveDrankLog();
 
-  // 재고 차감
+  // 재고 차감 (시트에 반영될 때까지 펜딩값으로 기억)
   setStock(w.id, getStock(w.id) - 1);
+  pendingDelta[w.id] = (pendingDelta[w.id] || 0) - 1;
+  savePending();
 
   closeSheets();
   renderList();
