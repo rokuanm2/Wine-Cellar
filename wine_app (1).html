@@ -1211,10 +1211,11 @@ function renderList() {
   const filtered = getFiltered();
   const container = document.getElementById('wine-list');
 
-  // Stats
-  document.getElementById('stat-total').textContent = wines.length;
-  document.getElementById('stat-red').textContent = wines.filter(w => w.type === 'Red').length;
-  document.getElementById('stat-white').textContent = wines.filter(w => w.type === 'White').length;
+  // Stats — 와인 종류 수가 아니라 실제 보유 병 수를 합산한다.
+  const bottleSum = list => list.reduce((sum, w) => sum + getStock(w.id), 0);
+  document.getElementById('stat-total').textContent = bottleSum(wines);
+  document.getElementById('stat-red').textContent = bottleSum(wines.filter(w => w.type === 'Red'));
+  document.getElementById('stat-white').textContent = bottleSum(wines.filter(w => w.type === 'White'));
   document.getElementById('stat-fav').textContent = wines.filter(w => w.fav).length;
 
   if (!filtered.length) {
