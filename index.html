@@ -1211,7 +1211,7 @@ function renderList() {
       const price = priceMatch ? '₩'+priceMatch[1] : (w.store_price || '');
       const store = w.store_price?.replace(/\([^)]+\)/,'') || '';
       html += `
-        <div class="wine-card" onclick="openDetail(${w.id})">
+        <div class="wine-card" onclick="openDetail('${w.id}')">
           <div class="wine-type-bar ${w.type==='Red'?'red':'white'}"></div>
           <div class="wine-info">
             <div class="wine-label">${w.label}</div>
@@ -1224,7 +1224,7 @@ function renderList() {
             </div>
           </div>
           <div class="wine-right">
-            <div class="fav-btn" onclick="toggleFav(event,${w.id})">${w.fav?'♥':'♡'}</div>
+            <div class="fav-btn" onclick="toggleFav(event,'${w.id}')">${w.fav?'♥':'♡'}</div>
             <div>
               <div class="wine-price">${price}</div>
               <div class="wine-store">${store}</div>
@@ -1239,7 +1239,7 @@ function renderList() {
 
 function toggleFav(e, id) {
   e.stopPropagation();
-  const w = wines.find(x => x.id === id);
+  const w = wines.find(x => x.id == id);
   if (w) {
     w.fav = !w.fav;
     saveWines();
@@ -1250,7 +1250,7 @@ function toggleFav(e, id) {
 
 // ── DETAIL ──
 function openDetail(id) {
-  const w = wines.find(x => x.id === id);
+  const w = wines.find(x => x.id == id);
   if (!w) return;
   const priceMatch = w.store_price?.match(/\(([^)]+)\)/);
   const price = priceMatch ? '₩'+priceMatch[1] : '';
@@ -1286,11 +1286,11 @@ function openDetail(id) {
     </div>` : ''}
 
     <div class="sheet-actions">
-      <button class="btn btn-danger" onclick="deleteWine(${w.id})">삭제</button>
-      <button class="btn btn-secondary" onclick="openEditSheet(${w.id})">수정</button>
-      <button class="btn btn-primary" onclick="toggleFavDetail(${w.id})">${w.fav?'♥ 즐겨찾기':'♡ 즐겨찾기'}</button>
+      <button class="btn btn-danger" onclick="deleteWine('${w.id}')">삭제</button>
+      <button class="btn btn-secondary" onclick="openEditSheet('${w.id}')">수정</button>
+      <button class="btn btn-primary" onclick="toggleFavDetail('${w.id}')">${w.fav?'♥ 즐겨찾기':'♡ 즐겨찾기'}</button>
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:10px;background:var(--gold);border:none;${getStock(w.id)===0?'opacity:0.4;pointer-events:none':''}" onclick="openDrinkSheet(${w.id})">
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;background:var(--gold);border:none;${getStock(w.id)===0?'opacity:0.4;pointer-events:none':''}" onclick="openDrinkSheet('${w.id}')">
       🥂 마셨어요 ${getStock(w.id)===0?'(재고 없음)':'(재고 '+getStock(w.id)+'병)'}
     </button>
   `;
@@ -1298,13 +1298,13 @@ function openDetail(id) {
 }
 
 function toggleFavDetail(id) {
-  const w = wines.find(x => x.id === id);
+  const w = wines.find(x => x.id == id);
   if (w) { w.fav = !w.fav; saveWines(); renderList(); openDetail(id); }
 }
 
 function deleteWine(id) {
   if (!confirm('정말 삭제할까요?')) return;
-  wines = wines.filter(w => w.id !== id);
+  wines = wines.filter(w => w.id != id);
   saveWines();
   closeSheets();
   renderList();
@@ -1328,7 +1328,7 @@ function openAddSheet() {
 }
 
 function openEditSheet(id) {
-  const w = wines.find(x => x.id === id);
+  const w = wines.find(x => x.id == id);
   if (!w) return;
   editingId = id;
   selectedType = w.type || '';
@@ -1367,7 +1367,7 @@ function saveWine() {
     note: document.getElementById('f-note').value.trim(),
   };
   if (editingId) {
-    const idx = wines.findIndex(w => w.id === editingId);
+    const idx = wines.findIndex(w => w.id == editingId);
     if (idx > -1) wines[idx] = {...wines[idx], ...data};
   } else {
     wines.push({id: nextId++, fav: false, ...data});
@@ -1488,9 +1488,9 @@ function renderInventory() {
           <div class="inv-dot ${w.type==='Red'?'red':'white'}"></div>
           <div class="inv-name">${w.label}<br><span style="font-size:11px;color:var(--text-soft)">${w.vintage||''}</span></div>
           <div class="inv-count">
-            <div class="inv-btn" onclick="adjustStock(${w.id},-1,this)">−</div>
+            <div class="inv-btn" onclick="adjustStock('${w.id}',-1,this)">−</div>
             <div class="inv-num" id="inv-${w.id}">${getStock(w.id)}</div>
-            <div class="inv-btn" onclick="adjustStock(${w.id},1,this)">+</div>
+            <div class="inv-btn" onclick="adjustStock('${w.id}',1,this)">+</div>
           </div>
         </div>`;
     });
@@ -1526,7 +1526,7 @@ function closeDrinkSheet() {
 // ── OPEN DRINK SHEET ──
 function openDrinkSheet(wineId) {
   drankingWineId = wineId;
-  const w = wines.find(x => x.id === wineId);
+  const w = wines.find(x => x.id == wineId);
   document.getElementById('drink-sheet-sub').textContent = w ? w.label : '';
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('drink-date').value = today;
@@ -1537,7 +1537,7 @@ function openDrinkSheet(wineId) {
 
 // ── CONFIRM DRANK ──
 function confirmDrank() {
-  const w = wines.find(x => x.id === drankingWineId);
+  const w = wines.find(x => x.id == drankingWineId);
   if (!w) return;
   const dateVal = document.getElementById('drink-date').value;
   const note = document.getElementById('drink-note').value.trim();
