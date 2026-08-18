@@ -271,6 +271,15 @@
     color: var(--text-soft);
     text-align: right;
   }
+  .price-toggle { cursor: pointer; }
+  .price-hint {
+    font-size: 11px;
+    color: var(--text-soft);
+    text-align: right;
+    padding: 3px 8px;
+    border-radius: 50px;
+    background: var(--tag-bg);
+  }
   .fav-btn {
     width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
@@ -972,7 +981,7 @@ const WINE_DATA = [
   {id:41,label:"EL ENEMIGO",name_kr:"엘 에네미고 카베르네 프랑",varietal:"Cabernet Franc",type:"Red",vintage:"2020",country:"ARGENTINA & CHILE",store_price:"새마을(36,900)"},
 ];
 
-const TASTING_DATA = [
+let TASTING_DATA = [
   {year:2026,num:1,label:"TRIPLE C",date:"2026.01.15",note:""},
   {year:2026,num:2,label:"BORGO BORELLI BAROLO",date:"2026.03.15",note:""},
   {year:2025,num:1,label:"CALERA",date:"2025.01.01",note:"새해 첫 와인으로 손색이 없었음.\n오봉과 비교해도 전혀 밀리지 않을 정도의 최고의 데일리 피노.\n스월링하지 않아도 뿜어져 나오는 장미꽃향이 지배적이었음. 과실향보다는 허브향이 더 지배적이었음.\n보인다면 더 사고싶었고, 2024년 TOP 10에 들어도 이상하지 않을정도의 최고였음.\n이탈리아와인보다 확실히 향이 좋았음. 피노는 피노."},
@@ -993,6 +1002,32 @@ const TASTING_DATA = [
 const SHEET_ID = '1ablf-mCKqzkjvrQAGW2K0hfxIKp7i9ubSxkBKPfJXZ8';
 const SHEET_GID = '0';
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+// 연도별 "OOOO_Tasting Note" 탭들도 함께 읽어와 TASTING_DATA를 채운다.
+const SHEET_TASTING_TABS = [
+  { year: 2026, gid: '1827553031' },
+  { year: 2025, gid: '2059999097' },
+  { year: 2024, gid: '1162108958' },
+];
+function tastingSheetUrl(gid) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+}
+// 연도 탭 구조: "번호,N,,,총점,점수" → "Label,라벨,,,시음일,날짜" → "Tasting,메모,,,," → 빈 줄들, 반복.
+function parseTastingCSV(csvText, year) {
+  const rows = parseCSV(csvText);
+  const entries = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] || [];
+    if ((row[0] || '').trim() === '번호') {
+      const labelRow = rows[i + 1] || [];
+      const tastingRow = rows[i + 2] || [];
+      const label = (labelRow[1] || '').trim();
+      const date = (labelRow[5] || '').trim();
+      const note = (tastingRow[1] || '').trim();
+      if (label) entries.push({ year, num: entries.length + 1, label, date, note });
+    }
+  }
+  return entries;
+}
 
 function parseCSV(text) {
   const rows = [];
@@ -1098,6 +1133,24 @@ async function syncFromSheet(manual) {
     const sheetWines = parseSheetToWines(text);
     if (!sheetWines.length) throw new Error('empty');
 
+    // 테이스팅 노트 탭들은 실패해도 와인 목록 동기화엔 영향 주지 않는다.
+    try {
+      const tastingTexts = await Promise.all(SHEET_TASTING_TABS.map(async t => {
+        const r = await fetch(tastingSheetUrl(t.gid), { cache: 'no-store' });
+        return r.ok ? r.text() : '';
+      }));
+      let newTasting = [];
+      SHEET_TASTING_TABS.forEach((t, i) => {
+        newTasting = newTasting.concat(parseTastingCSV(tastingTexts[i] || '', t.year));
+      });
+      if (newTasting.length) {
+        newTasting.sort((a, b) => b.year - a.year || a.num - b.num);
+        TASTING_DATA = newTasting;
+      }
+    } catch (e) {
+      console.error('tasting sheet sync failed', e);
+    }
+
     const prevById = {};
     wines.forEach(w => { prevById[w.id] = w; });
 
@@ -1134,7 +1187,9 @@ async function syncFromSheet(manual) {
     renderList();
     const invPage = document.getElementById('page-inventory');
     if (invPage && invPage.classList.contains('active')) renderInventory();
-    if (manual) showToast(`🔄 동기화 완료 (${wines.length}개 와인)`);
+    const tastingPage = document.getElementById('page-tasting');
+    if (tastingPage && tastingPage.classList.contains('active')) renderTasting();
+    if (manual) showToast(`🔄 동기화 완료 (와인 ${wines.length}개 · 테이스팅 ${TASTING_DATA.length}개)`);
   } catch (e) {
     console.error('sheet sync failed', e);
     if (manual) showToast('❌ 동기화 실패 - 연결을 확인해주세요');
@@ -1148,6 +1203,7 @@ let wines = JSON.parse(localStorage.getItem('wines') || 'null') || WINE_DATA.map
 let nextId = Math.max(0, ...wines.map(w => typeof w.id === 'number' ? w.id : 0)) + 1;
 let currentFilter = 'all';
 let favFilter = false;
+let revealedPrices = new Set();
 let editingId = null;
 let selectedType = '';
 
@@ -1258,9 +1314,11 @@ function renderList() {
           </div>
           <div class="wine-right">
             <div class="fav-btn" onclick="toggleFav(event,'${w.id}')">${w.fav?'♥':'♡'}</div>
-            <div>
+            <div class="price-toggle" onclick="togglePriceReveal(event,'${w.id}')">
+              ${revealedPrices.has(w.id) ? `
               <div class="wine-price">${price}</div>
               <div class="wine-store">${store}</div>
+              ` : `<div class="price-hint">가격 보기</div>`}
             </div>
           </div>
         </div>`;
@@ -1268,6 +1326,13 @@ function renderList() {
     html += '</div>';
   });
   container.innerHTML = html;
+}
+
+function togglePriceReveal(e, id) {
+  e.stopPropagation();
+  if (revealedPrices.has(id)) revealedPrices.delete(id);
+  else revealedPrices.add(id);
+  renderList();
 }
 
 function toggleFav(e, id) {
